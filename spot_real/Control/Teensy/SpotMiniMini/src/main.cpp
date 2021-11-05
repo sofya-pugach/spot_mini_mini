@@ -22,14 +22,15 @@
         - STRAIGHT_LEGS, LIEDOWN, and PERPENDICULAR_LEGS are used to validate your calibraton.
         - RUN is used when you are finished calibrating, and are ready to run normal operations.
 */
-enum MODE {NOMINAL_PWM, STRAIGHT_LEGS, LIEDOWN, PERPENDICULAR_LEGS, RUN};
-MODE spot_mode = RUN;
+enum MODE {NOMINAL_PWM, STRAIGHT_LEGS, LIEDOWN, PERPENDICULAR_LEGS, RUN,SHRUG_SHOULDERS};
+MODE spot_mode = STRAIGHT_LEGS;
 
 bool ESTOPPED = false;
 int viewing_speed = 400; // doesn't really mean anything, theoretically deg/sec
 int walking_speed = 1500; // doesn't really mean anything, theoretically deg/sec
 double last_estop = millis();
 static unsigned long prev_publish_time;
+static unsigned long prev_publish_time_debug;
 const int ledPin = 13;
 
 
@@ -230,6 +231,19 @@ void run_sequence()
 void straight_calibration_sequence()
 {
   set_stance();
+  //Serial.println('Straight Calibration');
+}
+
+void shoulder_calibration_sequence()
+{
+
+  // Move to Extended stance
+  delay(2000);
+  double shoulder_stance = 45.0;
+  double elbow_stance =  0.0;
+  double wrist_stance = 0.0;
+  set_stance(shoulder_stance, elbow_stance, wrist_stance, shoulder_stance, elbow_stance, wrist_stance);
+
 }
 
 void lie_calibration_sequence()
@@ -282,24 +296,24 @@ void setup()
     // SERVOS: Pin, StandAngle, HomeAngle, Offset, LegType, JointType, min_pwm, max_pwm, min_pwm_angle, max_pwm_angle
     // Shoulders
     double shoulder_liedown = 0.0;
-    FL_Shoulder.Initialize(2, 135 + shoulder_liedown, 135, -7.25, FL, Shoulder, 500, 2400); // 0 | 0: STRAIGHT | 90: OUT | -90 IN
-    FR_Shoulder.Initialize(5, 135 - shoulder_liedown, 135, -5.5, FR, Shoulder, 500, 2400);  // 1 | 0: STRAIGHT | 90: IN  | -90 OUT
-    BL_Shoulder.Initialize(8, 135 + shoulder_liedown, 135, 5.75, BL, Shoulder, 500, 2400);  // 2 | 0: STRAIGHT | 90: OUT | -90 IN
-    BR_Shoulder.Initialize(11, 135 - shoulder_liedown, 135, -4.0, BR, Shoulder, 500, 2400); // 3 | 0: STRAIGHT | 90: IN  | -90 OUT
+    FL_Shoulder.Initialize(2, shoulder_liedown, 0.0, 0.0, FL, Shoulder,  1450, 1050,0,-45.0); // 0 | 0: STRAIGHT | 90: OUT | -90 IN
+    FR_Shoulder.Initialize(5, shoulder_liedown, 0.0, 0.0, FR, Shoulder, 1475, 1850,0,-45.0);  // 1 | 0: STRAIGHT | 90: IN  | -90 OUT
+    BL_Shoulder.Initialize(8, shoulder_liedown, 0.0, 0.0, BL, Shoulder, 1500, 1050,0,-45.0);  // 2 | 0: STRAIGHT | 90: OUT | -90 IN
+    BR_Shoulder.Initialize(11, shoulder_liedown, 0.0, 0.0, BR, Shoulder, 1450, 1850,0,-45.0); // 3 | 0: STRAIGHT | 90: IN  | -90 OUT
     
     //Elbows
     double elbow_liedown = 90.0;
-    FL_Elbow.Initialize(3, elbow_liedown, 0, 0.0, FL, Elbow, 1410, 2062, 0.0, 90.0);        // 4 | 0: STRAIGHT | 90: BACK
-    FR_Elbow.Initialize(6, elbow_liedown, 0, 0.0, FR, Elbow, 1408, 733, 0.0, 90.0);         // 5 | 0: STRAIGHT | 90: BACK
-    BL_Elbow.Initialize(9, elbow_liedown, 0, 0.0, BL, Elbow, 1460, 2095, 0.0, 90.0);        // 6 | 0: STRAIGHT | 90: BACK
-    BR_Elbow.Initialize(12, elbow_liedown, 0, 0.0, BR, Elbow, 1505, 850, 0.0, 90.0);        // 7 | 0: STRAIGHT | 90: BACK
+    FL_Elbow.Initialize(3, elbow_liedown, 0, 0.0, FL, Elbow, 1450, 2400, 0.0, 90.0);        // 4 | 0: STRAIGHT | 90: BACK
+    FR_Elbow.Initialize(6, elbow_liedown, 0, 0.0, FR, Elbow, 1500, 535, 0.0, 90.0);         // 5 | 0: STRAIGHT | 90: BACK
+    BL_Elbow.Initialize(9, elbow_liedown, 0, 0.0, BL, Elbow, 1500, 2400, 0.0, 90.0);        // 6 | 0: STRAIGHT | 90: BACK
+    BR_Elbow.Initialize(12, elbow_liedown, 0, 0.0, BR, Elbow, 1500, 525, 0.0, 90.0);        // 7 | 0: STRAIGHT | 90: BACK
 
     //Wrists
     double wrist_liedown = -160.0;
-    FL_Wrist.Initialize(4, wrist_liedown, 0, 0.0, FL, Wrist, 1755, 2320, -90.0, -165.0);    // 8 | 0: STRAIGHT | -90: FORWARD
-    FR_Wrist.Initialize(7, wrist_liedown, 0, 0.0, FR, Wrist, 1805, 1150, 0.0, -90.0);       // 9 | 0: STRAIGHT | -90: FORWARD
-    BL_Wrist.Initialize(10, wrist_liedown, 0, 0.0, BL, Wrist, 1100, 1733, 0.0, -90.0);     // 10 | 0: STRAIGHT | -90: FORWARD
-    BR_Wrist.Initialize(13, wrist_liedown, 0, 0.0, BR, Wrist, 1788, 1153, 0.0, -90.0);     // 11 | 0: STRAIGHT | -90: FORWARD
+    FL_Wrist.Initialize(4, wrist_liedown, 0, 0.0, FL, Wrist, 550, 1500, 0.0, -90.0);    // 8 | 0: STRAIGHT | -90: FORWARD
+    FR_Wrist.Initialize(7, wrist_liedown, 0, 0.0, FR, Wrist, 2425,1525, 0.0, -90.0);       // 9 | 0: STRAIGHT | -90: FORWARD
+    BL_Wrist.Initialize(10, wrist_liedown, 0, 0.0, BL, Wrist, 550, 1575, 0.0, -90.0);     // 10 | 0: STRAIGHT | -90: FORWARD
+    BR_Wrist.Initialize(13, wrist_liedown, 0, 0.0, BR, Wrist, 2400,1500, 0.0, -90.0);     // 11 | 0: STRAIGHT | -90: FORWARD
 
     // Contact Sensors
     FL_sensor.Initialize(A9, 17);
@@ -320,6 +334,9 @@ void setup()
     } else if (spot_mode == PERPENDICULAR_LEGS)
     {
       perpendicular_calibration_sequence();
+    } else if (spot_mode == SHRUG_SHOULDERS)
+    {
+      shoulder_calibration_sequence();
     } else
     {
       run_sequence();
@@ -329,6 +346,7 @@ void setup()
   last_estop = millis();
 
   prev_publish_time = micros();
+  prev_publish_time_debug=micros();
 }
 
 // THIS LOOPS FOREVER
@@ -337,6 +355,12 @@ void loop()
   // CHECK SENSORS AND SEND INFO
   // CONTACT
   // 1'000'000 / 20'000 = 50hz
+  if ((micros() - prev_publish_time_debug) >= 1000000)
+  {
+    //Serial.println('jose');
+    prev_publish_time_debug = micros();
+  }
+
   if ((micros() - prev_publish_time) >= 20000)
   {
     ros_serial.publishContacts(FL_sensor.isTriggered(), FR_sensor.isTriggered(), BL_sensor.isTriggered(), BR_sensor.isTriggered());
